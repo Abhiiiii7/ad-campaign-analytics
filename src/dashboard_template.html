@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb; --card: #ffffff; --border: #e6e5e0;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984; --grid: #ecebe7;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --plan: #9a9993;
+  --good: #0ca30c; --critical: #d03b3b; --row-hover: #f3f2ee; --row-sel: #e4eefb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #141413; --card: #1a1a19; --border: #2e2e2b;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88; --grid: #2a2a27;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --plan: #7d7c76;
+    --good: #0ca30c; --critical: #e66767; --row-hover: #232321; --row-sel: #1d2d44;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #141413; --card: #1a1a19; --border: #2e2e2b;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88; --grid: #2a2a27;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --plan: #7d7c76;
+  --good: #0ca30c; --critical: #e66767; --row-hover: #232321; --row-sel: #1d2d44;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface); color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--text-2); margin: 0 0 20px; }
+.note { color: var(--muted); font-size: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.kpi .label { color: var(--text-2); font-size: 12px; }
+.kpi .value { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.kpi .hint { color: var(--muted); font-size: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 2px; }
+.card p.desc { color: var(--text-2); font-size: 12px; margin: 0 0 10px; }
+.chartbox { position: relative; height: 280px; }
+.section { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase;
+  letter-spacing: .04em; margin: 22px 0 10px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 10px; }
+.controls label { color: var(--text-2); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+input[type=range] { accent-color: var(--series-1); }
+.tablewrap { overflow: auto; max-height: 300px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+th { color: var(--text-2); font-weight: 500; font-size: 12px; position: sticky; top: 0; background: var(--card); }
+td:nth-child(2) { white-space: normal; min-width: 150px; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--row-hover); }
+tbody tr.sel { background: var(--row-sel); }
+.tag { font-size: 12px; font-weight: 500; }
+.tag.bad { color: var(--critical); } .tag.ok { color: var(--text-2); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+footer { margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ad Campaign Performance</h1>
+  <p class="sub">12 campaigns · 128 line items · 5 publishers · 6 placements · 30-day flights.
+    <span class="note">Simulated data for practice; publishers and advertisers are fictional.</span></p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Impressions analyzed</div><div class="value" id="kImpr"></div><div class="hint" id="kSpend"></div></div>
+    <div class="kpi"><div class="label">Budget shift: viewable impressions</div><div class="value" id="kLift"></div><div class="hint" id="kLiftHint"></div></div>
+    <div class="kpi"><div class="label">Line items under 90% of goal</div><div class="value" id="kUnder"></div><div class="hint">at end of flight</div></div>
+    <div class="kpi"><div class="label">Daily alert lead time</div><div class="value" id="kLead"></div><div class="hint">median, vs weekly pacing review</div></div>
+  </div>
+
+  <div class="section">Placement value</div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Cost per 1,000 viewable impressions (vCPM)</h2>
+      <p class="desc">Cheap banners cost half as much per impression, but only ~12% less per viewable one. Hover for CPM and viewability.</p>
+      <div class="chartbox"><canvas id="vcpm"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Display buys: CPM vs viewability</h2>
+      <p class="desc">Each dot is a publisher × placement; size = spend. Colored by vCPM third.</p>
+      <div class="legend" id="scLegend"></div>
+      <div class="chartbox" style="height:256px"><canvas id="scatter"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section">Pacing monitor</div>
+  <div class="grid2">
+    <div class="card">
+      <h2>At-risk line items</h2>
+      <p class="desc">Flagged when the 3-day run rate projects under 90% of goal. Click a row to see its curve.</p>
+      <div class="controls">
+        <label>As of flight day <input type="range" id="asof" min="3" max="30" value="14"> <strong id="asofLabel">14</strong></label>
+        <span class="note" id="atRiskCount"></span>
+      </div>
+      <div class="tablewrap"><table id="riskTable">
+        <thead><tr><th>Line</th><th>Publisher / placement</th><th>Pace</th><th>Projected</th><th>Finished</th></tr></thead>
+        <tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2 id="lineTitle">Line pacing</h2>
+      <p class="desc" id="lineDesc"></p>
+      <div class="chartbox"><canvas id="lineCurve"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How much earlier the daily alert catches under-delivery</h2>
+    <p class="desc">For the line items that finished under 90% of goal: days between the daily alert and the weekly review (days 7/14/21/28) flagging the same line.</p>
+    <div class="chartbox" style="height:220px"><canvas id="lead"></canvas></div>
+  </div>
+
+  <footer class="note">Built from <code>output/tableau/*.csv</code> by <code>src/build_dashboard.py</code>. Full numbers in <code>output/findings.md</code>.</footer>
+</div>
+
+<script>
+const D = __DATA__;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const txt2 = css("--text-2"), gridC = css("--grid");
+Chart.defaults.color = txt2;
+Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+// KPIs
+const K = D.kpi;
+document.getElementById("kImpr").textContent = (K.impressions / 1e6).toFixed(1) + "M";
+document.getElementById("kSpend").textContent = "$" + fmt(K.spend) + " spend";
+document.getElementById("kLift").textContent = "+" + (K.viewLift * 100).toFixed(1) + "%";
+document.getElementById("kLiftHint").textContent = `same budget · raw impressions +${(K.imprLift * 100).toFixed(1)}%`;
+document.getElementById("kUnder").textContent = `${K.under} of ${K.nLines}`;
+document.getElementById("kLead").textContent = K.medianEarlier.toFixed(0) + " days earlier";
+
+// vCPM by placement (single series, sorted)
+const pl = [...D.placements].sort((a, b) => a[6] - b[6]);
+new Chart(document.getElementById("vcpm"), {
+  type: "bar",
+  data: { labels: pl.map(p => p[0]), datasets: [{ data: pl.map(p => p[6]),
+    backgroundColor: pl.map(p => p[1] === "Video" ? css("--plan") : css("--series-1")),
+    borderRadius: 4, borderSkipped: "start", barThickness: 16 }] },
+  options: { indexAxis: "y", maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: {
+        title: i => pl[i[0].dataIndex][0],
+        label: c => { const p = pl[c.dataIndex];
+          return [`vCPM $${p[6].toFixed(2)}`, `CPM $${p[3].toFixed(2)}`, `Viewability ${p[5].toFixed(1)}%`, `CTR ${p[4].toFixed(2)}%`]; } } } },
+    scales: { x: { grid: { color: gridC }, border: { display: false }, ticks: { callback: v => "$" + v } },
+              y: { grid: { display: false } } } }
+});
+
+// Scatter (3 groups -> 3 categorical slots, legend + fixed order)
+const groups = [["Best third", "--series-1"], ["Middle", "--plan"], ["Worst third", "--series-2"]];
+document.getElementById("scLegend").innerHTML = groups.map(([g, v]) =>
+  `<span><i style="background:${css(v)}"></i>${g} by vCPM</span>`).join("");
+const maxSpend = Math.max(...D.scatter.map(s => s[5]));
+new Chart(document.getElementById("scatter"), {
+  type: "bubble",
+  data: { datasets: groups.map(([g, v]) => ({ label: g,
+    data: D.scatter.filter(s => s[6] === g).map(s => ({ x: s[2], y: s[3], r: 4 + 12 * Math.sqrt(s[5] / maxSpend), s })),
+    backgroundColor: css(v) + "cc", borderColor: css("--card"), borderWidth: 2 })) },
+  options: { maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: c => { const s = c.raw.s;
+        return [`${s[0]} · ${s[1]}`, `CPM $${s[2].toFixed(2)} · ${s[3].toFixed(1)}% viewable`, `vCPM $${s[4].toFixed(2)} · spend $${fmt(s[5])}`]; } } } },
+    scales: { x: { title: { display: true, text: "CPM ($)" }, grid: { color: gridC }, border: { display: false } },
+              y: { title: { display: true, text: "Viewability (%)" }, grid: { color: gridC }, border: { display: false } } } }
+});
+
+// Pacing monitor
+const ids = Object.keys(D.lines);
+let selected = null, curveChart;
+function renderRisk() {
+  const day = +document.getElementById("asof").value;
+  document.getElementById("asofLabel").textContent = day;
+  const risk = ids.map(id => ({ id, L: D.lines[id], proj: D.lines[id].proj[day - 1], pace: D.lines[id].pace[day - 1] }))
+    .filter(r => r.proj < 0.9).sort((a, b) => a.proj - b.proj);
+  document.getElementById("atRiskCount").textContent = `${risk.length} line items at risk on day ${day}`;
+  if (!selected || !risk.find(r => r.id === selected)) selected = risk.length ? risk[0].id : selected || ids[0];
+  document.querySelector("#riskTable tbody").innerHTML = risk.map(r => {
+    const fin = r.L.cum[29] / r.L.goal;
+    return `<tr data-id="${r.id}" class="${r.id === selected ? "sel" : ""}"><td>${r.id}</td><td>${r.L.pub} / ${r.L.plc}</td>
+      <td>${r.pace.toFixed(2)}x</td><td>${(r.proj * 100).toFixed(0)}%</td>
+      <td><span class="tag ${fin < 0.9 ? "bad" : "ok"}">${(fin * 100).toFixed(0)}%${fin < 0.9 ? " ▼" : ""}</span></td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="note">No line items at risk yet.</td></tr>`;
+  document.querySelectorAll("#riskTable tbody tr[data-id]").forEach(tr =>
+    tr.addEventListener("click", () => { selected = tr.dataset.id; renderRisk(); }));
+  renderCurve(day);
+}
+
+const markers = {
+  id: "markers",
+  afterDatasetsDraw(chart, _, opts) {
+    const { ctx, chartArea: a, scales: { x } } = chart;
+    (opts.lines || []).forEach(m => {
+      if (m.day == null) return;
+      const px = x.getPixelForValue(m.day - 1);
+      ctx.save(); ctx.strokeStyle = m.color; ctx.setLineDash([3, 3]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = m.color; ctx.font = "12px system-ui"; ctx.textAlign = m.align || "left";
+      ctx.fillText(m.label, px + (m.align === "right" ? -4 : 4), a.top + (m.dy || 12)); ctx.restore();
+    });
+  }
+};
+
+function renderCurve(day) {
+  const L = D.lines[selected];
+  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const cum = days.map(d => d <= day ? L.cum[d - 1] : null);
+  const plan = days.map(d => L.goal * d / 30);
+  const fin = L.cum[29] / L.goal;
+  document.getElementById("lineTitle").textContent = `Line ${selected}: ${L.pub} / ${L.plc}`;
+  document.getElementById("lineDesc").textContent =
+    `Goal ${fmt(L.goal)} · finished at ${(fin * 100).toFixed(0)}% of goal · daily alert day ${L.newFlag ?? "never"} · weekly review day ${L.oldFlag ?? "never"}`;
+  const mk = [{ day: L.newFlag, label: "daily alert", color: css("--series-1"), align: "right" },
+              { day: L.oldFlag, label: "weekly review", color: css("--critical"), dy: 28 }]
+    .filter(m => m.day != null && m.day <= day);
+  if (!curveChart) {
+    curveChart = new Chart(document.getElementById("lineCurve"), {
+      type: "line", plugins: [markers],
+      data: { labels: days, datasets: [
+        { label: "Delivered", data: cum, borderColor: css("--series-1"), backgroundColor: css("--series-1"), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5 },
+        { label: "Plan", data: plan, borderColor: css("--plan"), backgroundColor: css("--plan"), borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 4 } ] },
+      options: { maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+        plugins: { markers: { lines: mk },
+          legend: { position: "top", align: "start", labels: { boxWidth: 14, boxHeight: 2 } },
+          tooltip: { callbacks: { title: i => "Flight day " + i[0].label, label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } } },
+        scales: { x: { title: { display: true, text: "Flight day" }, grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                  y: { grid: { color: gridC }, border: { display: false }, ticks: { callback: v => v >= 1e6 ? (v / 1e6).toFixed(1) + "M" : (v / 1e3).toFixed(0) + "K" } } } }
+    });
+  } else {
+    curveChart.data.datasets[0].data = cum;
+    curveChart.data.datasets[1].data = plan;
+    curveChart.options.plugins.markers.lines = mk;
+    curveChart.update();
+  }
+}
+document.getElementById("asof").addEventListener("input", renderRisk);
+renderRisk();
+
+// Lead-time histogram
+const lo = Math.min(...D.lead), hi = Math.max(...D.lead);
+const bins = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
+new Chart(document.getElementById("lead"), {
+  type: "bar",
+  data: { labels: bins.map(b => b + (Math.abs(b) === 1 ? " day" : " days")),
+    datasets: [{ data: bins.map(b => D.lead.filter(v => v === b).length),
+      backgroundColor: css("--series-1"), borderRadius: 4, borderSkipped: "start", categoryPercentage: 0.9, barPercentage: 0.95 }] },
+  options: { maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { title: i => `${bins[i[0].dataIndex]} days earlier`, label: c => `${c.parsed.y} line items` } } },
+    scales: { x: { grid: { display: false } }, y: { grid: { color: gridC }, border: { display: false }, ticks: { precision: 0 },
+      title: { display: true, text: "Line items" } } } }
+});
+</script>
+</body>
+</html>

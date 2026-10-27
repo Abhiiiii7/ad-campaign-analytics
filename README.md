@@ -8,7 +8,17 @@ SQL and Python analysis of programmatic display and video delivery: **30.1M impr
 
 > **All data is simulated** (`src/generate_data.py`, fixed seed). Publishers and advertisers are fictional. I built this to practice the analysis, not to report on real campaigns.
 
-**Tools:** SQL (SQLite, window functions), Python (pandas, matplotlib), Tableau
+**Tools:** SQL (SQLite, window functions), Python (pandas, matplotlib), JavaScript + Chart.js (interactive dashboard), Tableau (build guide included)
+
+---
+
+## Live dashboard
+
+**[Open the interactive dashboard](https://abhiiiii7.github.io/ad-campaign-analytics/dashboard/)** — dashboard: placement vCPM, CPM vs viewability, an at-risk line item monitor with a day slider, and the alert lead-time histogram.
+
+[![Dashboard](dashboard/screenshot.png)](https://abhiiiii7.github.io/ad-campaign-analytics/dashboard/)
+
+Built by `src/build_dashboard.py` from the project's own data, so the numbers always match the analysis.
 
 ---
 
@@ -97,4 +107,5 @@ ad-campaign-analytics/
 pip install pandas numpy matplotlib tabulate
 python src/generate_data.py
 python src/analysis.py
+python src/build_dashboard.py
 ```
