@@ -1,0 +1,7 @@
+placement_name,format,impressions,viewable_impressions,clicks,spend,cpm,ctr_pct,viewability_pct,vcpm
+Sidebar 160x600,Display,6920263,2990472,3466,25409.52,3.67,0.05,43.2,8.5
+Below-the-fold 300x250,Display,10333756,3776764,6173,32254.75,3.12,0.06,36.5,8.54
+Above-the-fold 300x250,Display,4599696,3063735,5454,29466.23,6.41,0.119,66.6,9.62
+In-article native,Display,4156473,2988608,8051,30005.81,7.22,0.194,71.9,10.04
+Interstitial,Display,3573571,2944459,15532,31355.9,8.77,0.435,82.4,10.65
+Pre-roll video :15,Video,565732,462566,1783,8298.97,14.67,0.315,81.8,17.94

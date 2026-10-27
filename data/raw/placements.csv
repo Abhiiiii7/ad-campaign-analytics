@@ -1,0 +1,7 @@
+placement_id,placement_name,format,base_cpm,base_ctr,base_viewability
+P1,Above-the-fold 300x250,Display,6.5,0.0012,0.68
+P2,Below-the-fold 300x250,Display,3.2,0.0006,0.38
+P3,In-article native,Display,7.5,0.002,0.74
+P4,Sidebar 160x600,Display,3.8,0.0005,0.45
+P5,Interstitial,Display,9.0,0.0045,0.85
+P6,Pre-roll video :15,Video,14.0,0.003,0.8
